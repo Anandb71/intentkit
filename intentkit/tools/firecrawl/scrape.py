@@ -153,7 +153,7 @@ class FirecrawlScrape(FirecrawlBaseTool):
         try:
             async with httpx.AsyncClient(timeout=timeout / 1000 + 10) as client:
                 response = await client.post(
-                    "https://api.firecrawl.dev/v1/scrape",
+                    "https://api.firecrawl.dev/v2/scrape",
                     json=payload,
                     headers={
                         "Authorization": f"Bearer {api_key}",

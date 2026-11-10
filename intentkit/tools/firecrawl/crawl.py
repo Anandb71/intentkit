@@ -157,9 +157,20 @@ class FirecrawlCrawl(FirecrawlBaseTool):
         if exclude_paths:
             payload["excludePaths"] = exclude_paths
         if max_depth:
-            payload["maxDepth"] = max_depth
+            # Preserve v1's URL path depth limit, rather than discovery hops.
+            payload["regexOnFullURL"] = False
+            if include_paths:
+                payload["excludePaths"] = [
+                    *(exclude_paths or []),
+                    rf"^(/+[^/]+){{{max_depth + 1}}}",
+                ]
+            else:
+                payload["includePaths"] = [
+                    rf"^(/+[^/]+){{0,{max_depth}}}/*$",
+                    rf"^(/+[^/]+){{0,{max_depth}}}/+index\.(html|php)/*$",
+                ]
         if allow_backward_links:
-            payload["allowBackwardLinks"] = allow_backward_links
+            payload["crawlEntireDomain"] = allow_backward_links
         if allow_external_links:
             payload["allowExternalLinks"] = allow_external_links
         if allow_subdomains:
@@ -170,7 +181,7 @@ class FirecrawlCrawl(FirecrawlBaseTool):
             async with httpx.AsyncClient(timeout=120.0) as client:
                 # Start the crawl
                 response = await client.post(
-                    "https://api.firecrawl.dev/v1/crawl",
+                    "https://api.firecrawl.dev/v2/crawl",
                     json=payload,
                     headers={
                         "Authorization": f"Bearer {api_key}",
@@ -202,7 +213,7 @@ class FirecrawlCrawl(FirecrawlBaseTool):
                 while poll_count < max_polls:
                     # Check crawl status
                     status_response = await client.get(
-                        f"https://api.firecrawl.dev/v1/crawl/{crawl_id}",
+                        f"https://api.firecrawl.dev/v2/crawl/{crawl_id}",
                         headers={
                             "Authorization": f"Bearer {api_key}",
                             "Content-Type": "application/json",
